@@ -103,6 +103,7 @@ UserSchema.pre('save', function (next) {
   }
 
   if (this.password) {
+    const saltRounds = 10;
     this.password = bcrypt.hashSync(this.password, saltRounds);
   }
 
