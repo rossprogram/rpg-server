@@ -40,4 +40,25 @@ function validateUser(req, res, next) {
   }
 }
 
+export function validateToken(token, cb) {
+  jwt.verify(token, process.env.SECRET, (err, decoded) => {
+    if (err) {
+      cb(err);
+    } else {
+      userModel.findById(decoded.id, (err, user) => {
+        if (err) {
+          cb(err);
+        } else {
+          if (user) {
+            delete user.password;            
+            cb(null, user);
+          } else {
+            cb('could not find user');
+          }
+        }
+      });
+    }
+  });
+}
+
 export default validateUser;

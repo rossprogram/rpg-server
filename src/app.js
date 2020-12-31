@@ -14,7 +14,6 @@ app.set('trust proxy', 1);
 app.use(morgan('dev'));
 
 const allowedOrigins = [
-  'http://localhost:8080',
   'http://localhost:4000',
   'https://rpg.rossprogram.org',
 ];
