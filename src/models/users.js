@@ -83,7 +83,7 @@ UserSchema.methods.canViewRealm = function (realm) {
   if (this.isSuperuser) return true;
 
   // We can view any realm we are in
-  if (this.realms.includes(realm)) return true;
+  if (this.realms.includes(realm._id)) return true;
 
   return false;
 };
