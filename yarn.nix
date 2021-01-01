@@ -5602,6 +5602,14 @@
       };
     }
     {
+      name = "ws___ws_7.4.2.tgz";
+      path = fetchurl {
+        name = "ws___ws_7.4.2.tgz";
+        url  = "https://registry.yarnpkg.com/ws/-/ws-7.4.2.tgz";
+        sha1 = "782100048e54eb36fe9843363ab1c68672b261dd";
+      };
+    }
+    {
       name = "y18n___y18n_4.0.1.tgz";
       path = fetchurl {
         name = "y18n___y18n_4.0.1.tgz";

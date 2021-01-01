@@ -8,6 +8,7 @@
     "test": "nyc mocha --exit --require @babel/register test",
     "start": "npm run production",
     "server": "babel-node -r node_modules/dotenv/config ./src/index",
+    "fake-db": "babel-node -r node_modules/dotenv/config ./add-user",        
     "serve": "NODE_ENV=development npm-run-all server",
     "clean": "rimraf dist",
     "build": "babel ./src --out-dir dist",
