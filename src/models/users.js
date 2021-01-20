@@ -2,11 +2,12 @@ import { model, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const UserSchema = new Schema({
+  // the email is also the username
   email: {
     type: String,
     trim: true,
-    required: true,
-    unique: true,  // the email is also the username
+    unique: true,
+    sparse: true,
   },
 
   isSuperuser: {
@@ -40,16 +41,14 @@ const UserSchema = new Schema({
     trim: true,
   },
   
-  realms: {
-    type: [Schema.Types.ObjectId],
-    ref: 'Realm',
+  domains: {
+    type: [String],
   },
 
-  currentRealm: {
-    type: Schema.Types.ObjectId,
-    ref: 'Realm',
+  ipAddresses: {
+    type: [String],
   },
-
+  
   location: { x: Number, y: Number },
   
   photograph: { data: Buffer, contentType: String },
@@ -57,37 +56,34 @@ const UserSchema = new Schema({
   password: {
     type: String,
     trim: true,
-    required: true,
   },
 }, { timestamps: true });
 
 // because we permit user look-ups based on email
-UserSchema.index({ email: 1 });
-
-UserSchema.index({ currentRealm: 1 });
+UserSchema.index({ email: 1 }, {unique: true, sparse: true});
 
 // because we permit census-taking
-UserSchema.index({ realms: 1 });
+UserSchema.index({ domains: 1 });
 
 UserSchema.methods.canView = function (anotherUser) {
   if (this.isSuperuser) return true;
 
-  // You can view someone if they're in the same realm
-  const matches = this.realms.filter(realm => anotherUser.realms.includes(realm));
+  // You can view someone if they're in the same domain
+  const matches = this.domains.filter(domain => anotherUser.domains.includes(domain));
   if (matches.length > 0) return true;
 
   return false;
 };
 
-UserSchema.methods.canViewRealm = function (realm) {
+UserSchema.methods.canViewDomain = function (domain) {
   if (this.isSuperuser) return true;
 
-  // We can view any realm we are in
-  if (this.realms.includes(realm._id)) return true;
+  // We can view any domain we are in
+  if (this.domains.includes(domain)) return true;
 
   return false;
 };
-UserSchema.methods.canViewRealmUsers = UserSchema.methods.canViewRealm;
+UserSchema.methods.canViewDomainUsers = UserSchema.methods.canViewDomain;
 
 UserSchema.methods.canEdit = function (anotherUser) {
   if (this.isSuperuser) return true;

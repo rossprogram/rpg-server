@@ -17,9 +17,8 @@ Log in as the given user.  Password is sent in the `Authorization:
 Basic` header.  Responds by returning a token in the body containing a
 JWT.
 
-## Realms
+### GET /users/anonymous/token
 
-### GET /realms/:realm/users
-
-### GET /realms/:realm/map.json
+Log in as an anonymous user.  Responds by returning a token in the
+body containing a JWT.
 

@@ -1,7 +1,18 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import userModel from '../models/users';
-import realmModel from '../models/realms';
+
+import { uniqueNamesGenerator, adjectives, animals } from 'unique-names-generator';
+
+const customConfig = {
+  dictionaries: [adjectives, animals],
+  separator: ' ',
+  length: 2,
+};
+ 
+function randomName() {
+  return uniqueNamesGenerator(customConfig);
+}
 
 export function findUser(req, res, next) {
   function handleUser(err, user) {
@@ -54,11 +65,10 @@ export function get(req, res, next) {
 
 export function getAll(req, res, next) {
   if (req.jwt && req.jwt.user) {
-    const query = {
-      realms: req.jwt.user.currentRealm,
-    };
+    let origin = req.get('origin');
+    const query = { domains: origin };
     
-    userModel.find(query, 'currentRealm location')
+    userModel.find(query, 'location')
       .exec((err, users) => {
         if (err) return res.status(500).send('Error fetching users');
         return res.json(users.map((u) => u.toJSON()));
@@ -105,6 +115,20 @@ export function put(req, res, next) {
 }
 
 function generateJWT(req, res, callback) {
+  const token = jwt.sign({ id: req.user._id }, req.app.get('secretKey'), { expiresIn: '1y' });
+
+  var ip = (req.headers['x-forwarded-for'] || '').split(',').pop() || 
+      req.connection.remoteAddress || 
+      req.socket.remoteAddress || 
+      req.connection.socket.remoteAddress;
+
+  req.user.update( { '$addToSet': { 'ipAddresses': ip } }, function() { return; });
+
+  delete req.user.password;
+  callback(null, token);  
+}
+
+function generateValidJWT(req, res, callback) {
   const auth = (req.headers.authorization || '').split(' ')[1] || '';
   const [login, password] = Buffer.from(auth, 'base64').toString().split(':');
   
@@ -112,17 +136,7 @@ function generateJWT(req, res, callback) {
     res.sendStatus(500);
   } else if (req.user && req.user.password) {
     if (bcrypt.compareSync(password, req.user.password)) {
-      const token = jwt.sign({ id: req.user._id }, req.app.get('secretKey'), { expiresIn: '1y' });
-
-      var ip = (req.headers['x-forwarded-for'] || '').split(',').pop() || 
-          req.connection.remoteAddress || 
-          req.socket.remoteAddress || 
-          req.connection.socket.remoteAddress;
-
-      req.user.update( { '$addToSet': { 'ipAddresses': ip } }, function() { return; });
-
-      delete req.user.password;
-      callback(null, token);
+      generateJWT( req, res, callback );
     } else {
       res.status(401).send('Invalid credentials');
     }
@@ -130,7 +144,7 @@ function generateJWT(req, res, callback) {
 }
 
 export function authorize(req, res, next) {
-  generateJWT(req, res, (err, token) => {
+  generateValidJWT(req, res, (err, token) => {
     if (err) res.status(500).send('Could not generate JWT');
     // express records maxAge in milliseconds to be consistent with javascript mroe generally
     else {
@@ -140,9 +154,28 @@ export function authorize(req, res, next) {
   });
 }
 
-export function token(req, res, next) {
-  generateJWT(req, res, (err, token) => {
+export function token(req, res) {
+  generateValidJWT(req, res, (err, aToken) => {
     if (err) res.status(500).send('Could not generate JWT');
-    else res.json({ token, user: req.user.toJSON() });
+    else res.json({ token: aToken, user: req.user.toJSON() });
+  });
+}
+
+export function anonymousToken(req, res) {
+  let origin = req.get('origin');
+  const displayName = randomName();
+  const avatar = 'mary';
+
+  userModel.create({ displayName, avatar, domains: [origin] }, (err, user) => {
+    if (err) {
+      console.log(err);
+      res.status(500).send('Could not create user');
+    } else {
+      req.user = user;
+      generateJWT(req, res, (err, aToken) => {
+        if (err) res.status(500).send('Could not generate JWT');
+        else res.json({ token: aToken, user: req.user.toJSON() });
+      });
+    }
   });
 }
