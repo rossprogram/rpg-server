@@ -82,6 +82,7 @@ export function put(req, res, next) {
   if (req.user) {
     if (req.jwt && req.jwt.user) {
       if (req.jwt.user.canEdit(req.user)) {
+        console.log(req.body);
         if (req.body.displayName !== undefined) {
           req.user.displayName = req.body.displayName;
         }
@@ -92,8 +93,12 @@ export function put(req, res, next) {
 
         if (req.body.twitter !== undefined) {
           req.user.twitter = req.body.twitter;
-        }                
-        
+        }
+
+        if (req.body.avatar !== undefined) {
+          req.user.avatar = req.body.avatar;
+        }
+
         // FIXME missing edits
         req.user.save()
           .then(() => {
@@ -164,8 +169,30 @@ export function token(req, res) {
 export function anonymousToken(req, res) {
   let origin = req.get('origin');
   const displayName = randomName();
-  const avatar = 'mary';
 
+  const possibleAvatars = [
+    'Adam',
+    'Alex',
+    'Amelia',
+    'Bob',
+    'Kirk',
+    'Martin',
+    'Mary',
+    'Dan',
+    'Edward',
+    'Abby',
+    'Oscar',
+    'Lucy',
+    'Molly',
+    'Josh',
+    'Jenny',
+    'Pier',
+    'Rob',
+    'Roki',
+    'Samuel'
+  ];
+  const avatar = possibleAvatars[Math.floor(Math.random()*possibleAvatars.length)];
+  
   userModel.create({ displayName, avatar, domains: [origin] }, (err, user) => {
     if (err) {
       console.log(err);
